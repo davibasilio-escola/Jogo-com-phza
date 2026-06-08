@@ -1,83 +1,87 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const gameContainer = document.getElementById("gameContainer");
+const playerCar = document.getElementById("playerCar");
+const scoreDisplay = document.getElementById("score");
 
-const gameOverScreen = document.getElementById("game-over-screen");
-const scoreElement = document.getElementById("score");
-
-// Configurações do jogo
+let playerPos = { x: 125, y: 380 }; // posição inicial
+const gameWidth = 300;
+const gameHeight = 500;
+const carWidth = 50;
 let score = 0;
 let gameOver = false;
-let gameSpeed = 5;
-let frames = 0;
 
-// Configuração das "pistas" (estilo Midnight Motorist)
-const laneWidth = canvas.width / 4; // 4 pistas judiciais
+const enemies = [];
 
-// Jogador (Seu carro)
-const player = {
-    x: canvas.width / 2 - 20,
-    y: canvas.height - 100,
-    width: 35,
-    height: 60,
-    color: #ff007f, // Rosa Neon
-    speed: 6,
-    movingLeft: false,
-    movingRight: false
-};
-
-// Lista de carros inimigos
-let enemies = [];
-
-// Captura de comandos do teclado
+// Controle do carro
 document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") player.movingLeft = true;
-    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") player.movingRight = true;
-    
-    if (gameOver && e.key === " ") {
-        resetGame();
-    }
+    if (gameOver) return;
+
+    const step = 20;
+    if (e.key === "ArrowLeft" && playerPos.x > 0) playerPos.x -= step;
+    if (e.key === "ArrowRight" && playerPos.x < gameWidth - carWidth) playerPos.x += step;
+    if (e.key === "ArrowUp" && playerPos.y > 0) playerPos.y -= step;
+    if (e.key === "ArrowDown" && playerPos.y < gameHeight - carWidth) playerPos.y += step;
+
+    playerCar.style.left = playerPos.x + "px";
+    playerCar.style.top = playerPos.y + "px";
 });
 
-document.addEventListener("keyup", (e) => {
-    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") player.movingLeft = false;
-    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") player.movingRight = false;
-});
-
-// Função para gerar inimigos em pistas aleatórias
+// Criar inimigos
 function spawnEnemy() {
-    // Controla a frequência de spawn baseado nos frames e na velocidade
-    if (frames % Math.max(40, 100 - Math.floor(gameSpeed * 2)) === 0) {
-        const randomLane = Math.floor(Math.random() * 4);
-        const enemyX = randomLane * laneWidth + (laneWidth - 35) / 2;
-        
-        // Cores retrô aleatórias para os outros carros
-        const colors = ["#00fff0", "#7000ff", "#ffb703", "#00ff66"];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const enemy = document.createElement("div");
+    enemy.classList.add("enemyCar");
+    enemy.style.left = Math.floor(Math.random() * (gameWidth - carWidth)) + "px";
+    enemy.style.top = "-100px";
+    gameContainer.appendChild(enemy);
+    enemies.push(enemy);
+}
 
-        enemies.push({
-            x: enemyX,
-            y: -70,
-            width: 35,
-            height: 60,
-            color: randomColor,
-            speed: gameSpeed + (Math.random() * 2 - 1) // variação leve na velocidade
-        });
+// Atualizar inimigos
+function updateEnemies() {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        let enemyY = parseInt(enemy.style.top);
+        enemyY += 5; // velocidade do carro inimigo
+        enemy.style.top = enemyY + "px";
+
+        // Checar colisão
+        if (
+            playerPos.x < parseInt(enemy.style.left) + carWidth &&
+            playerPos.x + carWidth > parseInt(enemy.style.left) &&
+            playerPos.y < enemyY + 100 &&
+            playerPos.y + 100 > enemyY
+        ) {
+            endGame();
+        }
+
+        // Remover inimigos que saíram da tela
+        if (enemyY > gameHeight) {
+            gameContainer.removeChild(enemy);
+            enemies.splice(i, 1);
+            score += 1;
+            scoreDisplay.textContent = "Pontuação: " + score;
+        }
     }
 }
 
-// Desenha as linhas da estrada se movendo
-function drawRoad() {
-    ctx.fillStyle = "#222";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+// Encerrar jogo
+function endGame() {
+    gameOver = true;
+    alert("Game Over! Sua pontuação: " + score);
+    location.reload();
+}
 
-    ctx.strokeStyle = "#fff";
-    ctx.setLineDash([20, 20]); // Linhas tracejadas
-    ctx.lineWidth = 4;
+// Loop do jogo
+function gameLoop() {
+    if (!gameOver) {
+        updateEnemies();
+        requestAnimationFrame(gameLoop);
+    }
+}
 
-    // Linha vertical se movendo para dar efeito de velocidade
-    let lineOffset = (frames * gameSpeed) % 40;
+// Spawn de inimigos a cada 1 segundo
+setInterval(() => {
+    if (!gameOver) spawnEnemy();
+}, 1000);
 
-    for (let i = 1; i < 4; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * laneWidth, 0 + lineOffset - 40);
-        ctx.lineTo(i * laneWidth, canvas.height +
+// Iniciar o jogo
+gameLoop();
