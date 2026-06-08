@@ -16,10 +16,11 @@ document.addEventListener("keydown", (e) => {
     if (gameOver) return;
 
     const step = 20;
-    if (e.key === "ArrowLeft" && playerPos.x > 0) playerPos.x -= step;
-    if (e.key === "ArrowRight" && playerPos.x < gameWidth - carWidth) playerPos.x += step;
-    if (e.key === "ArrowUp" && playerPos.y > 0) playerPos.y -= step;
-    if (e.key === "ArrowDown" && playerPos.y < gameHeight - carWidth) playerPos.y += step;
+    if (e.key === "W" && playerPos.x > 0) playerPos.x -= step;
+    if (e.key === "D" && playerPos.x < gameWidth - carWidth) playerPos.x += step;
+    if (e.key === "A" && playerPos.y > 0) playerPos.y -= step;
+    if (e.key === "S" && playerPos.y < gameHeight - carWidth) playerPos.y += step;
+
 
     playerCar.style.left = playerPos.x + "px";
     playerCar.style.top = playerPos.y + "px";
